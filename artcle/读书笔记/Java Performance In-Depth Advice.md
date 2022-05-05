@@ -314,4 +314,30 @@ p.x = p.x*2;
 
 ### 逃逸分析
 
-### 
+`XX:+DoEscapeAnalysis`配置参数，默认为true。
+
+```java
+public class Factorial {
+    private BigInteger factirial;
+    private int n;
+    public Factorail(int n) {
+        this.n = n;
+    }
+    public synchronized BigInteger getFactorial() {
+        if (factorial == null) {
+            factorial = ...;
+            return factorial;
+        }
+    }
+}
+```
+
+存储100个factorial值在数组中，代码如下：
+
+```java
+ArrayList<BigInteger> = new ArrayList<BigInteger>();
+for (int i = 0; i < 100; i++) {
+    Factorial factorial = new Factorial(i);
+    list.add(facotrial.getFactorial);
+}
+```
