@@ -384,4 +384,4 @@ GC在追寻对象引用或者在内存中移除对象的时候会确保应用线
 
 大多数垃圾回收器将堆内存分为不同的区
 
-<img src="file:///Users/cechealth/Desktop/docs/img/artcle/spliting_the_heap.png" title="" alt="" data-align="inline">
+![This is an image](../../img/artcle/spliting_the_heap.png)
