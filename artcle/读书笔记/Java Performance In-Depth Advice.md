@@ -341,3 +341,47 @@ for (int i = 0; i < 100; i++) {
     list.add(facotrial.getFactorial);
 }
 ```
+
+没有其他的代码可以访问factorial对象，JVM将做一下优化：
+
+* 不需要sychronization lock在调用getFactorial()方法时。
+
+* 不需要再内存中储存n，可以直接在寄存器中保存。
+
+* 不需要分配很多的factirial对象，仅仅只追溯每个对象的各自独立的字段。
+
+逃逸分析优化也可能导致bug，simpler code wile compile better.
+
+### 分层编译器的取舍（Trade-offs）
+
+* 在有限的内存环境中
+
+### javac编译器
+
+对javac编译器的几点误解：
+
+1. 使用`-g`选项添加debugging信息不是影响性能
+
+2. 使用`final`关键字不会提升编译速度
+
+3. 新版本的javac不会使程序变快
+
+## 垃圾回收器介绍
+
+应用不能使用计数来动态的追踪，JVM必须定期的在堆中搜寻未使用的对象。这项工作会从GC roots开始, GC root对象是可以从堆外访问的。主要包括线程堆栈和系统对象。这些对象始终是可访问的，GC算法可以通过一个root对象扫描到所有可访问的对象。不可达的对象就被视为垃圾。
+
+垃圾回收器的性能取决这些基本的操作：
+
+* 找到不使用的对象
+
+* 标记所占内存为可用的
+
+* 压缩堆
+
+GC在追寻对象引用或者在内存中移除对象的时候会确保应用线程没有使用这些对象。所有应用线程的暂停被称为`stop-the-world pauses`，通常这种暂停对应用程序的性能有巨大的影响，减少这种暂停的时间是GC调优重要的考虑方向。
+
+### 常见的垃圾回收器
+
+大多数垃圾回收器将堆内存分为不同的区
+
+<img src="file:///Users/cechealth/Desktop/docs/img/artcle/spliting_the_heap.png" title="" alt="" data-align="inline">
