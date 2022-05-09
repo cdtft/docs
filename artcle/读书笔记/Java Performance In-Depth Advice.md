@@ -385,3 +385,61 @@ GC在追寻对象引用或者在内存中移除对象的时候会确保应用线
 大多数垃圾回收器将堆内存分为不同的区
 
 ![This is an image](../../img/artcle/spliting_the_heap.png)
+
+#### Young GC
+
+当young generation被填充满后，垃圾回收器会停止所有的应用线程并清空young generation，不被使用的对象将被丢弃，继续使用的对象将被移动到另外一个地方。这种操作叫做minor G**C或者叫young GC。**
+
+分代收集是在应用线程停止的频率和当堆空间填满时等待JVM的GC操作之间做权衡。
+
+分代回收的两个优点：
+
+* young generation只是堆内存的一个区间，执行回收操作会比对整个堆进行回收更快
+
+* 对象在young generation的分配方，减少内存碎片
+
+> The second advantage arises from the way objects are allocated in the young generation. Objects are allocated in eden (which encompasses the vast majority of the young generation). When the young generation is cleared during a collection, all objects in eden are either moved or discarded: objects that are not in use can be discarded, and objects in use are moved either to one of the survivor spaces or to the old generation. Since all surviving objects are moved, the young generation is automatically compacted when it is collected: at the end of the collection, eden and one of the survivor spaces are empty, and the objects that remain in the young generation are compacted within the other survivor space.
+
+#### Full GC
+
+`concurrent collectors`: **scan for unused objects can occur without stopping application threads.**
+
+使用并发收集器应用程序会经历更短的暂停时间。最大的权衡在于程序总体上会占用跟多的CPU。
+
+一个程序（REST server）是否使用并行收集器可以从以下几点来考虑：
+
+1. 独立的请求被暂停时间影响，特别是full GC的长暂停。如果目标是最小化暂停对响应时间的影响，并发收集器是一个很好的选择。
+
+2. 如果平均相应时间比一些异常值更重要，非并发的收集起更好。
+
+3. 额外CPU使用开销带来避免长暂停的好处。如果你的机器缺乏并发收集器需要的CPU空闲周期，那么非并行收集器是更好的选择。
+
+批处理应用程序权衡点：
+
+1. 如果有足够可用的CPU资源，可以使用并发收集器避免full GC可以使任务更快的完成。
+
+2. 因为CPU的限制，额外的CPU资源消耗到了并发收集器上会导致比处理任务时间变长。
+
+### GC Algorithms
+
+#### The serial grbage collector
+
+The serial collector uses a single htread to process the heap.It will stop all application threads as the heap is processed(for either a minor or full GC)在full GC期间将完全压缩老年代。
+
+使用`-XX:+UseSerialGC`启用serial GC，serial GC的停用是使用其他的GC算法取代，而不是使用minus sign(-XX:-UseSerialGC)
+
+#### The throughput collecor/parallel collector
+
+JDK8的默认收集器，需要64位的机器至少两个的CPU核心数。throughput collector使用多线程收集young generation，相比serial GC可以更快的完成Minor GC.
+
+使用`-XX:+UseParallelGC.`开启
+
+#### The G1 GC collector
+
+`G1`：garbage first garbage collector
+
+G1收集器还是采用的分代收集的方式，将heap分为young generation和old generation，垃圾回收器在young generation工作时还是会暂停所有的应用线程移动所有的存活的对象到old genertation或者survivor spaces。old generation的收集是后台线程工作，不需要暂停应用程序，old generation也被分化出了不同的区域，G1 GC在清理old generation的对象的时候会把存活对象复制到另一个区域，这种方式同时可以压缩heap，减少内存碎片。
+
+#### The CMS collector
+
+CMS是第一个并发回收器，在后台工作的时候没有办法同时压缩堆内存，如果堆内存变的碎片化，就必须暂停所有的应用线程来完成堆的压缩。
