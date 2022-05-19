@@ -173,6 +173,17 @@ VM的启动参数
 
 > 提供GC和类加载信息
 
+jstat最有用的参数选项为 `-gcutil` 它会每过一段时间就展示出每个GC区域当前的填充情况。
+
+```text
+➜ jstat -gcutil 615 1000           
+  S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT    CGC    CGCT     GCT   
+  0.00 100.00  92.19  85.31  95.44  88.37    155    1.676     0    0.000    62    1.584    3.261
+  0.00 100.00   0.00  85.91  95.41  88.37    156    1.687     0    0.000    62    1.584    3.271
+
+```
+更具上面的信息可以得出：一共执行了155次young GC总共耗时1.676秒。CGCT为并发收集器执行的时间。
+
 #### jvisualvm
 
 > JVM监控图形工具
@@ -211,7 +222,8 @@ JVM在执行代码的时候不会李哥变异代码，有以下两个原因：
 
 * 被JVM多次执行的方法和循环，当代码被编译的时候，JVM会拥有足够的信息来优化。
   
-  > 例如`equals()` 方法当解释其遇到b = obj1.equals(obje2) 语句的时候，先要查找obj1的类型，才能知道哪一个equals()方法被执行。这种动态查找是很耗时的。通常JVM注意到每次改语句执行的时候obj1是String类型，JVM可以在编译的时候直接调用String的equals()方法。
+  > 例如`equals()` 方法当解释其遇到b = obj1.equals(obje2) 语句的时候，先要查找obj1的类型，才能知道哪一个equals()方法被执行。这种动态查找是很耗时的。
+  > 通常JVM注意到每次改语句执行的时候obj1是String类型，JVM可以在编译的时候直接调用String的equals()方法。
 
 -XX:-TieredCompilation使用分层编译参数。
 
@@ -219,7 +231,8 @@ JVM在执行代码的时候不会李哥变异代码，有以下两个原因：
 
 调校Code Cache参数
 
-> JVM编译代码后，会将会变代码存入code cache，一旦code cache装满，JVM就不能再编译任何的代码。JVM会先预留code cache设置的内存空间不分配，但是会被预留。extra memory reservation will generally be accepted by the operating system.
+> JVM编译代码后，会将会变代码存入code cache，一旦code cache装满，JVM就不能再编译任何的代码。JVM会先预留code cache设置的内存空间不分配，
+> 但是会被预留。extra memory reservation will generally be accepted by the operating system.
 
 ### 编译代码的几种状态
 
@@ -245,7 +258,8 @@ JVM在执行代码的时候不会李哥变异代码，有以下两个原因：
 
 `4`: C2 compile code
 
-通常编译日志显示大多数方法编译的等级在level3。所有的方法开始都在level0,但是不会显示日志。如果一个方法京城的被执行，将会提升编译等级到level4，最常见的是，C1 compiler等待需要编译的代码直到有了如何使用这些代码的信息，利用这些信息来执行优化。
+通常编译日志显示大多数方法编译的等级在level3。所有的方法开始都在level0,但是不会显示日志。如果一个方法京城的被执行，将会提升编译等级到level4，最常见的是，
+C1 compiler等待需要编译的代码直到有了如何使用这些代码的信息，利用这些信息来执行优化。
 
 如果C2的队列满了，需要编译的方法将从C2的队列中拉去出来使用level2等级编译。
 
@@ -269,9 +283,11 @@ JVM在执行代码的时候不会李哥变异代码，有以下两个原因：
 
 **编译器线程数**
 
-当一个方法达到了编译的要求，改方法会加入一个队列，这个队列被一个或多个后台的线程处理。这个队列不是严格的先进先出的队列，被执行次数高的方法具有较高的优先级。C1和C2编译器用不同的队列，也有不同的线程对其进行处理。
+当一个方法达到了编译的要求，改方法会加入一个队列，这个队列被一个或多个后台的线程处理。这个队列不是严格的先进先出的队列，被执行次数高的方法具有较高的优先级。
+C1和C2编译器用不同的队列，也有不同的线程对其进行处理。
 
-`-XX:CICompilerCount=N`调整编译线程的数量，设置编译线程数量的三分之一会被JVM用于处理C1编译的队列，剩余的线程会用于处理C2编译器的队列。CICompilerCount的默认值是基于CPU的数量，低版本的JDK在容器中使用需要注意。
+`-XX:CICompilerCount=N`调整编译线程的数量，设置编译线程数量的三分之一会被JVM用于处理C1编译的队列，剩余的线程会用于处理C2编译器的队列。
+CICompilerCount的默认值是基于CPU的数量，低版本的JDK在容器中使用需要注意。
 
 `-XX:+BackgroundCompilation`设置线编译线程异步的处理队列。
 
@@ -368,7 +384,8 @@ for (int i = 0; i < 100; i++) {
 
 ## 垃圾回收器介绍
 
-应用不能使用计数来动态的追踪，JVM必须定期的在堆中搜寻未使用的对象。这项工作会从GC roots开始, GC root对象是可以从堆外访问的。主要包括线程堆栈和系统对象。这些对象始终是可访问的，GC算法可以通过一个root对象扫描到所有可访问的对象。不可达的对象就被视为垃圾。
+应用不能使用计数来动态的追踪，JVM必须定期的在堆中搜寻未使用的对象。这项工作会从GC roots开始, GC root对象是可以从堆外访问的。主要包括线程堆栈和系统对象。这些对象始终是可访问的，
+GC算法可以通过一个root对象扫描到所有可访问的对象。不可达的对象就被视为垃圾。
 
 垃圾回收器的性能取决这些基本的操作：
 
@@ -378,7 +395,8 @@ for (int i = 0; i < 100; i++) {
 
 * 压缩堆
 
-GC在追寻对象引用或者在内存中移除对象的时候会确保应用线程没有使用这些对象。所有应用线程的暂停被称为`stop-the-world pauses`，通常这种暂停对应用程序的性能有巨大的影响，减少这种暂停的时间是GC调优重要的考虑方向。
+GC在追寻对象引用或者在内存中移除对象的时候会确保应用线程没有使用这些对象。所有应用线程的暂停被称为`stop-the-world pauses`，
+通常这种暂停对应用程序的性能有巨大的影响，减少这种暂停的时间是GC调优重要的考虑方向。
 
 ### 常见的垃圾回收器
 
@@ -424,7 +442,8 @@ GC在追寻对象引用或者在内存中移除对象的时候会确保应用线
 
 #### The serial grbage collector
 
-The serial collector uses a single htread to process the heap.It will stop all application threads as the heap is processed(for either a minor or full GC)在full GC期间将完全压缩老年代。
+The serial collector uses a single htread to process the heap.It will stop all application threads as the heap is 
+processed(for either a minor or full GC)在full GC期间将完全压缩老年代。
 
 使用`-XX:+UseSerialGC`启用serial GC，serial GC的停用是使用其他的GC算法取代，而不是使用minus sign(-XX:-UseSerialGC)
 
@@ -472,4 +491,17 @@ CMS是第一个并发回收器，在后台工作的时候没有办法同时压�
     >heap打小的控制主要使用两个参数初始化值 `-XmsN` 和最大值 `-XmxN`
 2. 调整堆的大小为在full GC后30%的堆空间被使用。
 #### 调整分代大小
+首先使用`NewRatio`设置young generation的大小，默认值为`2`，如果应用的设置的最大怼内存和最小堆内存是相等，那么也最好使用`-Xmn`
+来设置young generation，如果应用需要动态的改变堆的大小，和young generation的大小，那么就关注`NewRatio`的值。
+最好使用 `Adaptive sizing`控制JVM去改变young generation的大小。
+
+#### 调整元空间大小
+在JVM加载class的时候，JVM需要跟踪到这些class的元数据，并占据一个单独的堆空间叫做 `metaspace`，在老版本的JVM中叫做 `permgen`
+。metaspace保存了大量和类相关的数据。metaspace并没有保存类实例和反射对象的实例（例如：Method Object）
+这些对象还是存储在堆内存中的。对metaspace的调整是很罕见的，应为默认的初始大小就很充足。
+
+metaspace在改变大小的时候会要求full GC这是一个很昂贵的操作，如果在程序启动时候有大量的full GC那么就应该调整metaspace的初始值。
+
+#### 控制并行数量
+一个机器在多JVM的时候要限制GC线程的总数量，防止所有的JVM同一时间进行GC，这会导致很多CPU竞争产生。
 
