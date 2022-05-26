@@ -46,17 +46,58 @@ G1 GC有四种逻辑操作：
 4. if necessary, a full GC
 
 ### G1 GC Young Collection
+
 ![image](../../img/artcle/g1_young_gc.png)
+
 Eden全部清空,如果survive
 
 ### G1 GC并发标记
 ![image](../../img/artcle/g1_gc_marking.png)
+
 在并发周期至少有一个年轻代集合，因为在标记周期前eden区域被完全释放，新的eden区域开始分配。有一些区域会被标记为X，这些区域属于
 old generation，其中还包含数据，这些区域可以确定主要包含垃圾。
 
 最后可以注意到在完成标记周期后old generation大多数都被占用，因为在标记周期中年轻代发生的收集将数据提升到老年代中。另外，
 在标记周期中实际上不会释放任老年代的数据，仅仅是标记出大多数是垃圾的区域，这些区域的对象将在后面一次周期中清除。
+
 ![image](../../img/artcle/marking_cycle.png)
+
+### Mixed GC
+>Dead Humongous objects are freed at the end of the marking cycle during the cleanup phase also during
+a full garbage collection cycle.
+
+通过full GC的日志来优化应用的性能：
+
+`Concurrent mode failure`:
+
+G1 GC开始标记周期，但是老年代被填满在标记周期完成之前。并发标记被暂时搁置。
+```text
+51.408: [GC concurrent-mark-start]
+        65.473: [Full GC 4095M->1395M(4096M), 6.1963770 secs]
+         [Times: user=7.87 sys=0.00, real=6.20 secs]
+71.669: [GC concurrent-mark-abort]
+[51.408][info][gc,marking] GC(30) Concurrent Mark From Roots
+...
+[65.473][info][gc] GC(32) Pause Full (G1 Evacuation Pause) 4095M->1305M(4096M) 60,196.377
+...
+[71.669s][info][gc,marking] GC(30) Concurrent Mark From Roots 191ms
+[71.669s][info][gc,marking] GC(30) Concurrent Mark Abort
+```
+这种错误意味着应该增加堆内存的大小，G1 GC的后台执行需要更快速，或者标记周期需要更快。
+
+`Pormotion failure`:
+在完成标记周期后已经开始mixed GC清除old regions，虽然清理了很多的空间，但是太多的对象从young generation提升到old generation
+导致老年代的空间不足。在mixed GC后紧接着出现full GC。
+
+`Evacuation failure`:
+当执行年轻收集时survivor没有足够的空间，老年代保留了全部幸存的对象。
+
+`Humongous allocation failure`:
+应用分配了很大的对象可以触发另外一种的full GC
+
+`Metadata GC threshold`:
+In JDK 11, the metaspace can be collected/resized without requiring a full GC.
+
 
 
 
