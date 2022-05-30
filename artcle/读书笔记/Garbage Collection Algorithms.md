@@ -61,6 +61,10 @@ old generation，其中还包含数据，这些区域可以确定主要包含垃
 在标记周期中实际上不会释放任老年代的数据，仅仅是标记出大多数是垃圾的区域，这些区域的对象将在后面一次周期中清除。
 
 ![image](../../img/artcle/marking_cycle.png)
+> the G1 Collector alternates between tow phases. The young-only phase contains garbage collections that fill
+> up the currently available memory with objects in the old generation gradually. The space-reclamation phase is where
+> G1 reclaims space in the old generation incrementally, in addition to handling the young generation, Then the cycle
+> restart with a young-only phase.
 
 ### Mixed GC
 >Dead Humongous objects are freed at the end of the marking cycle during the cleanup phase also during
@@ -90,6 +94,7 @@ G1 GC开始标记周期，但是老年代被填满在标记周期完成之前。
 导致老年代的空间不足。在mixed GC后紧接着出现full GC。
 
 `Evacuation failure`:
+evacuation: live objects found within selected memory areas to collect are copied into new memory areas,
 当执行年轻收集时survivor没有足够的空间，老年代保留了全部幸存的对象。
 
 `Humongous allocation failure`:
