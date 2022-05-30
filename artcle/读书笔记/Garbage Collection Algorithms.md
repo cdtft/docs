@@ -103,6 +103,17 @@ evacuation: live objects found within selected memory areas to collect are copie
 `Metadata GC threshold`:
 In JDK 11, the metaspace can be collected/resized without requiring a full GC.
 
+### Mixed GCd的性能调优
+
+在一个并发周期后，G1 GC不能够开始一个新的周期除非之前old generation中的被标记的区域都被收集。因此如果想轻易的开启G1 GC的标记周期需要在mixed
+GC周期执行更多的区域。
+
+mixed GC等工作量取决于三方方面的因素：
+1. 在一开始又多少的大多数被垃圾占据的区域被发现
+2. mixed GC 周期执行的最大次数`-XX:G1MixedGCCountTarget=N`默认为8，减少次数可以帮助克服promotion failures但是需要更多的暂停时间
+3. 最大暂停时间
+
+
 
 
 
